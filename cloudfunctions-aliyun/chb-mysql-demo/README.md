@@ -28,9 +28,11 @@ const query = function(sql, values) {
     return new Promise((resolve, reject) => {
         connection.query(sql, values, (error, results, fields) => {
             if (error) {
-                reject(error)
+              reject(error)
+            }else{
+              resolve(results)
             }
-            resolve(results)
+            
         })
     })
 }
