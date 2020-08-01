@@ -11,32 +11,21 @@ const collection = db.collection('zhihu-daily-articles')
 const dbCmd = db.command
 
 exports.main = async (event, context) => {
-  //event为客户端上传的参数
-  console.log('event : ' + event)
-
+ 
+  //获取已存库的最大文章ID
+  let maxIdInDb = await getMaxId();
+  
+  // 开始抓取首页链接
+  let indexArr = []
   let html = request('GET', host).getBody().toString();
   let $ = cheerio.load(html);
-
   // 获取文章节点
   let list = $('.main-content-wrap .row').find('.link-button')
-  
-  
-  const maxIdRecord = await collection.field({
-    zhihu_id: true
-  }).orderBy("zhihu_id", "desc").limit(1).get()
-  
-  let maxIdInDb = 0
-  if (maxIdRecord && maxIdRecord.data && maxIdRecord.data.length > 0) {
-    maxIdInDb = maxIdRecord.data[0].zhihu_id
-  }
-  
-
-  let indexArr = []
-
   for (var i = 0; i < list.length; i++) {
     let href = list.eq(i).attr("href")
     let _id = parseInt(href.substring(7)) //文章ID
     console.log("当前ID："+_id+",maxId:"+maxIdInDb);
+    // 找出未入库的文章ID
     if(_id > maxIdInDb){
       indexArr.push(i)
     }
@@ -44,6 +33,7 @@ exports.main = async (event, context) => {
   
   console.log('新增文章数量：',indexArr.length);
 
+  // 循环抓取每个新文章详情页
   if(indexArr.length>0){
     for (let i = 0; i < indexArr.length; i++) {
       let href = list.eq(indexArr[i]).attr("href")
@@ -56,6 +46,23 @@ exports.main = async (event, context) => {
   //返回数据给客户端
   return event
 };
+
+/**
+ * 获取已存库的最大文章ID
+ */
+async function getMaxId(){
+  // 获取已存库的最大文章ID
+  const record = await collection.field({
+    zhihu_id: true
+  }).orderBy("zhihu_id", "desc").limit(1).get()
+  
+  let maxIdInDb = 0
+  if (record && record.data && record.data.length > 0) {
+    maxIdInDb = record.data[0].zhihu_id
+  }
+  return maxIdInDb
+}
+
 /** 抓取文章详情内容并存库
  * @param {Object} path
  * @param {Object} title
@@ -70,14 +77,13 @@ async function saveArticle(path, title, preview_image) {
     title,
     preview_image
   }
+  
+  console.log('path:',host + path);
 
   let html = request('GET', host + path).getBody().toString();
   let $ = cheerio.load(html);
 
-  console.log('作者1：',$('.ZhihuDaily-AuthorLine').html());
-  console.log('作者2：',$('ZhihuDaily-Author').text());
-
-  article.author = $('.ZhihuDaily-Author').text() //取作者信息
+  article.author = $('.author').text() //取作者信息
   //获取文章内容，注意使用html-entities解码
   article.content = entities.decode($('.content').html())
   article.create_date = new Date().getTime()
@@ -87,12 +93,4 @@ async function saveArticle(path, title, preview_image) {
     console.log(title + " -> 添加成功");
   }
 
-}
-
-/**
- * 延时
- * @param {Object} ms
- */
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
 }
