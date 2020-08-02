@@ -1,4 +1,4 @@
-云函数爬虫示例：爬取知乎日报并存入云数据库
+云函数爬虫示例：爬取知乎日报列表及详情，并存入云数据库
 
 这是云函数中实现爬虫的示例，体验方式如下：
 
@@ -8,6 +8,9 @@
 4. 本地运行，右键 -> 本地运行云函数
 5. 云端定时运行，上传云函数，然后到[uniCloud控制台](https://unicloud.dcloud.net.cn/)设置定时器，参考[定时触发](https://uniapp.dcloud.net.cn/uniCloud/trigger)
 
+本插件示例主要内容：
+1. 爬取知乎日报首页，[https://daily.zhihu.com/](https://daily.zhihu.com/)，抓取文章列表
+2. 根据列表内容，分析文章详情url，如[https://daily.zhihu.com/story/9726457](https://daily.zhihu.com/story/9726457)，抓取文章详情内容，并入库保存
 
 本插件依赖库说明：
 1. sync-request：同步请求
